@@ -1,0 +1,108 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ==========================================
+    // HELPER FUNCTIONS
+    // ==========================================
+    
+    /** Check if the user is authenticated */
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    /** 
+     * Check if the user has access to this tenant.
+     * Uses custom claims: auth.token.tenants (array of authorized tenant IDs)
+     * or auth.token.super_admin (boolean) for super admins.
+     */
+    function isTenantUser(tenantId) {
+      return isAuthenticated() && (
+        request.auth.token.super_admin == true ||
+        (request.auth.token.tenants is list && tenantId in request.auth.token.tenants)
+      );
+    }
+    
+    /** Check if the user has a specific role */
+    function hasRole(role) {
+      return isAuthenticated() && request.auth.token.role == role;
+    }
+    
+    /** Check if user is an admin */
+    function isAdmin() {
+      return hasRole('admin') || request.auth.token.super_admin == true;
+    }
+    
+    /** Check if a field was not modified */
+    function isUnmodified(field) {
+      return request.resource.data[field] == resource.data[field];
+    }
+
+    /** Validate quantity is a non-negative number */
+    function isValidQuantity() {
+      return !('quantity' in request.resource.data) || 
+             (request.resource.data.quantity is number && request.resource.data.quantity >= 0);
+    }
+
+    // ==========================================
+    // COLLECTION RULES
+    // ==========================================
+
+    match /parts/{partId} {
+      allow read: if isTenantUser(resource.data.tenantId);
+      allow create: if isTenantUser(request.resource.data.tenantId) && isValidQuantity();
+      allow update: if isTenantUser(resource.data.tenantId) 
+                    && isTenantUser(request.resource.data.tenantId) 
+                    && isUnmodified('tenantId')
+                    && isValidQuantity();
+      allow delete: if isTenantUser(resource.data.tenantId) && isAdmin();
+    }
+
+    match /locations/{locationId} {
+      allow read: if isTenantUser(resource.data.tenantId);
+      allow create: if isTenantUser(request.resource.data.tenantId);
+      allow update: if isTenantUser(resource.data.tenantId) 
+                    && isTenantUser(request.resource.data.tenantId) 
+                    && isUnmodified('tenantId');
+      allow delete: if isTenantUser(resource.data.tenantId);
+    }
+
+    match /partners/{partnerId} {
+      allow read: if isTenantUser(resource.data.tenantId);
+      allow create: if isTenantUser(request.resource.data.tenantId);
+      allow update: if isTenantUser(resource.data.tenantId) 
+                    && isTenantUser(request.resource.data.tenantId) 
+                    && isUnmodified('tenantId');
+      allow delete: if isTenantUser(resource.data.tenantId);
+    }
+
+    match /purchaseOrders/{orderId} {
+      allow read: if isTenantUser(resource.data.tenantId);
+      allow create: if isTenantUser(request.resource.data.tenantId);
+      allow update: if isTenantUser(resource.data.tenantId) 
+                    && isTenantUser(request.resource.data.tenantId) 
+                    && isUnmodified('tenantId');
+      allow delete: if isTenantUser(resource.data.tenantId) && isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isTenantUser(resource.data.tenantId);
+      // Only admins can manage user docs directly
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /auditLogs/{logId} {
+      allow read: if isTenantUser(resource.data.tenantId);
+      allow create: if isTenantUser(request.resource.data.tenantId);
+      // Append-only: no updates or deletes
+      allow update, delete: if false;
+    }
+
+    match /inventory_events/{eventId} {
+      allow read: if isTenantUser(resource.data.tenantId);
+      allow create: if isTenantUser(request.resource.data.tenantId);
+      // Append-only: no updates or deletes
+      allow update, delete: if false;
+    }
+  }
+}
