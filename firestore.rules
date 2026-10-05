@@ -85,6 +85,24 @@ service cloud.firestore {
       allow delete: if isTenantUser(resource.data.tenantId) && isAdmin();
     }
 
+    match /jobConfigurations/{configId} {
+      allow read: if isTenantUser(resource.data.tenantId);
+      allow create: if isTenantUser(request.resource.data.tenantId);
+      allow update: if isTenantUser(resource.data.tenantId) 
+                    && isTenantUser(request.resource.data.tenantId) 
+                    && isUnmodified('tenantId');
+      allow delete: if isTenantUser(resource.data.tenantId) && isAdmin();
+    }
+
+    match /repairOrders/{orderId} {
+      allow read: if isTenantUser(resource.data.tenantId);
+      allow create: if isTenantUser(request.resource.data.tenantId);
+      allow update: if isTenantUser(resource.data.tenantId) 
+                    && isTenantUser(request.resource.data.tenantId) 
+                    && isUnmodified('tenantId');
+      allow delete: if isTenantUser(resource.data.tenantId) && isAdmin();
+    }
+
     match /users/{userId} {
       allow read: if isTenantUser(resource.data.tenantId);
       // Only admins can manage user docs directly
