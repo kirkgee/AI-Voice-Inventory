@@ -4,14 +4,16 @@ import React, { useState } from 'react';
 import SyncStatusIndicator from '@/components/SyncStatusIndicator';
 import PurchaseOrderForm from '@/components/PurchaseOrderForm';
 import RepairExecutionHub from '@/components/repair/RepairExecutionHub';
+import WarehouseStockingHub from '@/components/stocking/WarehouseStockingHub';
+import { APP_VERSION } from '@/version';
 
 // TODO: Replace with real tenant ID from auth context
 const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID || 'demo-tenant';
 
-type AppSection = 'repairs' | 'purchase_orders';
+type AppSection = 'repairs' | 'purchase_orders' | 'stocking_putaway';
 
 export default function Home() {
-  const [activeSection, setActiveSection] = useState<AppSection>('repairs');
+  const [activeSection, setActiveSection] = useState<AppSection>('stocking_putaway');
   const [showPOForm, setShowPOForm] = useState(false);
   const [lastSavedPOId, setLastSavedPOId] = useState<string | null>(null);
 
@@ -25,9 +27,14 @@ export default function Home() {
       {/* App Header & Navigation */}
       <header style={styles.header}>
         <div>
-          <h1 style={styles.title}>AI Voice Inventory & Service Suite</h1>
+          <div style={styles.titleRow}>
+            <h1 style={styles.title}>AI Voice Inventory & Service Suite</h1>
+            <span style={styles.versionBadge} title={`App Version ${APP_VERSION}`}>
+              v{APP_VERSION}
+            </span>
+          </div>
           <p style={styles.subtitle}>
-            Offline-first inventory management, multi-model repair execution & service administration
+            Offline-first inventory management, multi-model repair execution & warehouse stocking
           </p>
         </div>
         <SyncStatusIndicator />
@@ -35,6 +42,16 @@ export default function Home() {
 
       {/* Top Primary Navigation */}
       <nav style={styles.navBar}>
+        <button
+          type="button"
+          onClick={() => setActiveSection('stocking_putaway')}
+          style={{
+            ...styles.navBtn,
+            ...(activeSection === 'stocking_putaway' ? styles.navBtnActive : {}),
+          }}
+        >
+          📥 Warehouse Stocking & Putaway
+        </button>
         <button
           type="button"
           onClick={() => setActiveSection('repairs')}
@@ -58,7 +75,9 @@ export default function Home() {
       </nav>
 
       {/* Main Content Area */}
-      {activeSection === 'repairs' ? (
+      {activeSection === 'stocking_putaway' ? (
+        <WarehouseStockingHub tenantId={TENANT_ID} />
+      ) : activeSection === 'repairs' ? (
         <RepairExecutionHub tenantId={TENANT_ID} />
       ) : (
         <div style={{ marginTop: '24px' }}>
@@ -92,7 +111,7 @@ export default function Home() {
 
 const styles: Record<string, React.CSSProperties> = {
   main: {
-    padding: '24px',
+    padding: '16px',
     maxWidth: '1360px',
     margin: '0 auto',
     fontFamily:
@@ -100,6 +119,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#0f172a',
     backgroundColor: '#f8fafc',
     minHeight: '100vh',
+    boxSizing: 'border-box',
   },
   header: {
     display: 'flex',
@@ -111,37 +131,60 @@ const styles: Record<string, React.CSSProperties> = {
     paddingBottom: '16px',
     borderBottom: '1px solid #e2e8f0',
   },
+  titleRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    flexWrap: 'wrap',
+    marginBottom: '4px',
+  },
   title: {
-    margin: '0 0 4px 0',
-    fontSize: '1.75rem',
+    margin: 0,
+    fontSize: '1.625rem',
     fontWeight: 800,
     color: '#0f172a',
     letterSpacing: '-0.02em',
   },
+  versionBadge: {
+    padding: '3px 9px',
+    borderRadius: '12px',
+    fontSize: '0.75rem',
+    fontWeight: 700,
+    backgroundColor: '#eff6ff',
+    color: '#1d4ed8',
+    border: '1px solid #bfdbfe',
+    letterSpacing: '0.02em',
+    display: 'inline-flex',
+    alignItems: 'center',
+  },
   subtitle: {
     margin: 0,
-    fontSize: '0.9375rem',
+    fontSize: '0.875rem',
     color: '#64748b',
   },
   navBar: {
     display: 'flex',
-    gap: '8px',
+    gap: '6px',
     backgroundColor: '#e2e8f0',
     padding: '4px',
     borderRadius: '10px',
     width: 'fit-content',
-    marginBottom: '8px',
+    maxWidth: '100%',
+    overflowX: 'auto',
+    marginBottom: '16px',
+    WebkitOverflowScrolling: 'touch',
   },
   navBtn: {
-    padding: '10px 20px',
+    padding: '10px 16px',
     borderRadius: '8px',
     border: 'none',
     backgroundColor: 'transparent',
     color: '#475569',
-    fontSize: '0.9375rem',
+    fontSize: '0.875rem',
     fontWeight: 600,
     cursor: 'pointer',
     transition: 'all 0.15s ease',
+    whiteSpace: 'nowrap',
   },
   navBtnActive: {
     backgroundColor: '#ffffff',

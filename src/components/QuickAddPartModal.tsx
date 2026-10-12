@@ -9,6 +9,8 @@ export interface QuickAddPartModalProps {
   onClose: () => void;
   /** Optional: pre-fill the supplier field (e.g. from the PO's supplier) */
   defaultSupplier?: string;
+  /** Optional: pre-fill the SKU field */
+  initialSku?: string;
 }
 
 interface FormState {
@@ -36,9 +38,11 @@ export default function QuickAddPartModal({
   onPartCreated,
   onClose,
   defaultSupplier = '',
+  initialSku = '',
 }: QuickAddPartModalProps) {
   const [form, setForm] = useState<FormState>({
     ...initialForm,
+    sku: initialSku,
     supplier: defaultSupplier,
   });
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
